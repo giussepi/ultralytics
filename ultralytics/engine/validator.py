@@ -107,6 +107,7 @@ class BaseValidator:
         """
         self.training = trainer is not None
         augment = self.args.augment and (not self.training)
+
         if self.training:
             self.device = trainer.device
             self.data = trainer.data
@@ -150,7 +151,9 @@ class BaseValidator:
             self.dataloader = self.dataloader or self.get_dataloader(self.data.get(self.args.split), self.args.batch)
 
             model.eval()
-            model.warmup(imgsz=(1 if pt else self.args.batch, 3, imgsz, imgsz))  # warmup
+            # using 1 channel instead of 3
+            # model.warmup(imgsz=(1 if pt else self.args.batch, 3, imgsz, imgsz))  # warmup
+            model.warmup(imgsz=(1 if pt else self.args.batch, 1, imgsz, imgsz))  # warmup
 
         self.run_callbacks('on_val_start')
         dt = Profile(), Profile(), Profile(), Profile()

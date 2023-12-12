@@ -103,8 +103,9 @@ class BaseDataset(Dataset):
             for p in img_path if isinstance(img_path, list) else [img_path]:
                 p = Path(p)  # os-agnostic
                 if p.is_dir():  # dir
-                    f += glob.glob(str(p / '**' / '*.*'), recursive=True)
-                    # F = list(p.rglob('*.*'))  # pathlib
+                    # FIXME: UGLY PATCH. Fix it and make it work for all images types
+                    #         the problem is that some folder names contains dot
+                    f += glob.glob(str(p / '**' / '*.npy'), recursive=True)
                 elif p.is_file():  # file
                     with open(p) as t:
                         t = t.read().strip().splitlines()
@@ -144,10 +145,13 @@ class BaseDataset(Dataset):
     def load_image(self, i, rect_mode=True):
         """Loads 1 image from dataset index 'i', returns (im, resized hw)."""
         im, f, fn = self.ims[i], self.im_files[i], self.npy_files[i]
+
         if im is None:  # not cached in RAM
             if fn.exists():  # load npy
                 try:
                     im = np.load(fn)
+                    # adding and extra dimension in case of 2D numpy arrays
+                    im = im[..., np.newaxis]
                 except Exception as e:
                     LOGGER.warning(f'{self.prefix}WARNING ⚠️ Removing corrupt *.npy image file {fn} due to: {e}')
                     Path(fn).unlink(missing_ok=True)

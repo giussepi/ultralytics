@@ -98,12 +98,14 @@ class YOLODataset(BaseDataset):
         """Returns dictionary of labels for YOLO training."""
         self.label_files = img2label_paths(self.im_files)
         cache_path = Path(self.label_files[0]).parent.with_suffix('.cache')
-        try:
-            cache, exists = load_dataset_cache_file(cache_path), True  # attempt to load a *.cache file
-            assert cache['version'] == DATASET_CACHE_VERSION  # matches current version
-            assert cache['hash'] == get_hash(self.label_files + self.im_files)  # identical hash
-        except (FileNotFoundError, AssertionError, AttributeError):
-            cache, exists = self.cache_labels(cache_path), False  # run cache ops
+        # FIXME: rebuilding the cache files all the time
+        # try:
+        #     cache, exists = load_dataset_cache_file(cache_path), True  # attempt to load a *.cache file
+        #     assert cache['version'] == DATASET_CACHE_VERSION  # matches current version
+        #     assert cache['hash'] == get_hash(self.label_files + self.im_files)  # identical hash
+        # except (FileNotFoundError, AssertionError, AttributeError):
+        #     cache, exists = self.cache_labels(cache_path), False  # run cache ops
+        cache, exists = self.cache_labels(cache_path), False  # run cache ops
 
         # Display cache
         nf, nm, ne, nc, n = cache.pop('results')  # found, missing, empty, corrupt, total
@@ -136,12 +138,14 @@ class YOLODataset(BaseDataset):
 
     def build_transforms(self, hyp=None):
         """Builds and appends transforms to the list."""
-        if self.augment:
-            hyp.mosaic = hyp.mosaic if self.augment and not self.rect else 0.0
-            hyp.mixup = hyp.mixup if self.augment and not self.rect else 0.0
-            transforms = v8_transforms(self, self.imgsz, hyp)
-        else:
-            transforms = Compose([LetterBox(new_shape=(self.imgsz, self.imgsz), scaleup=False)])
+        # FIXME: disabling the augmentations
+        # if self.augment:
+        #     hyp.mosaic = hyp.mosaic if self.augment and not self.rect else 0.0
+        #     hyp.mixup = hyp.mixup if self.augment and not self.rect else 0.0
+        #     transforms = v8_transforms(self, self.imgsz, hyp)
+        # else:
+        #     transforms = Compose([LetterBox(new_shape=(self.imgsz, self.imgsz), scaleup=False)])
+        transforms = Compose([LetterBox(new_shape=(self.imgsz, self.imgsz), scaleup=False)])
         transforms.append(
             Format(bbox_format='xywh',
                    normalize=True,
