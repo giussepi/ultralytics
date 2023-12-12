@@ -897,8 +897,11 @@ class Format:
         """Format the image for YOLO from Numpy array to PyTorch tensor."""
         if len(img.shape) < 3:
             img = np.expand_dims(img, -1)
-        img = np.ascontiguousarray(img.transpose(2, 0, 1)[::-1])
+
+        # quick fix to have float images
+        img = np.ascontiguousarray(img.transpose(2, 0, 1)[::-1], dtype=np.float)
         img = torch.from_numpy(img)
+
         return img
 
     def _format_segments(self, instances, cls, w, h):

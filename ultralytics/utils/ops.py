@@ -780,7 +780,9 @@ def convert_torch2numpy_batch(batch: torch.Tensor) -> np.ndarray:
     Returns:
         (np.ndarray): Output NumPy array batch of shape (Batch, Height, Width, Channels) and dtype uint8.
     """
-    return (batch.permute(0, 2, 3, 1).contiguous() * 255).clamp(0, 255).to(torch.uint8).cpu().numpy()
+    # using 12 bits range 0 - 4096
+    # return (batch.permute(0, 2, 3, 1).contiguous() * 255).clamp(0, 255).to(torch.uint8).cpu().numpy()
+    return (batch.permute(0, 2, 3, 1).contiguous() * 4096).clamp(0, 4096).to(torch.uint8).cpu().numpy()
 
 
 def clean_str(s):

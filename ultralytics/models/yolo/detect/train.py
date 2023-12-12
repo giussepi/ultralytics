@@ -53,7 +53,8 @@ class DetectionTrainer(BaseTrainer):
 
     def preprocess_batch(self, batch):
         """Preprocesses a batch of images by scaling and converting to float."""
-        batch['img'] = batch['img'].to(self.device, non_blocking=True).float() / 255
+        # normalising using 12 bits max 4096
+        batch['img'] = batch['img'].to(self.device, non_blocking=True).float() / 4096
         return batch
 
     def set_model_attributes(self):
