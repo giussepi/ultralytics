@@ -3,6 +3,7 @@
 from copy import copy
 
 import numpy as np
+import torch
 
 from ultralytics.data import build_dataloader, build_yolo_dataset
 from ultralytics.engine.trainer import BaseTrainer
@@ -53,8 +54,12 @@ class DetectionTrainer(BaseTrainer):
 
     def preprocess_batch(self, batch):
         """Preprocesses a batch of images by scaling and converting to float."""
-        # normalising using 12 bits max 4096
-        batch['img'] = batch['img'].to(self.device, non_blocking=True).float() / 4096
+        # normalising using 12 bits max 4096 and clipping values
+        # batch['img'] = batch['img'].to(self.device, non_blocking=True).float() / 4096
+        batch['img'] = batch['img'].to(self.device, non_blocking=True).float()
+        torch.clamp(batch['img'], 0, 4096, out=batch['img'])
+        batch['img'] /= 4096
+
         return batch
 
     def set_model_attributes(self):

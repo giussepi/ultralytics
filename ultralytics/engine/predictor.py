@@ -126,9 +126,13 @@ class BasePredictor:
 
         im = im.to(self.device)
         im = im.half() if self.model.fp16 else im.float()  # uint8 to fp16/32
+
         if not_tensor:
+            # getting rid of outliers
+            torch.clamp(im, 0, 4096, out=im)
             # normalising using 12 bits max 4096
             im /= 4096
+
         return im
 
     def inference(self, im, *args, **kwargs):
