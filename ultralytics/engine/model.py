@@ -223,8 +223,21 @@ class Model(nn.Module):
         is_cli = (sys.argv[0].endswith('yolo') or sys.argv[0].endswith('ultralytics')) and any(
             x in sys.argv for x in ('predict', 'track', 'mode=predict', 'mode=track'))
 
-        custom = {'conf': 0.25, 'save': is_cli}  # method defaults
-        args = {**self.overrides, **custom, **kwargs, 'mode': 'predict'}  # highest priority args on the right
+        # fix to employ the conf_pred from the provided cfg
+        provided_cfg = yaml_load(checks.check_yaml(kwargs['cfg'])) if kwargs.get('cfg') else {}
+        if provided_cfg:
+            if 'conf_pred' in provided_cfg.keys():
+                provided_cfg['conf'] = provided_cfg.pop('conf_pred')
+            elif 'conf' in provided_cfg.keys():
+                # removing the conf val to allow custom_1 dict to be effective
+                provided_cfg.pop('conf')
+
+        # fix to make the custom options compatible with the provided_cfg
+        # custom = {'conf': 0.25, 'save': is_cli}  # method defaults
+        custom_1 = {'conf': 0.25}  # method defaults
+        custom_2 = {'save': is_cli}  # method defaults
+        args = {**custom_1, **provided_cfg, **self.overrides, **custom_2,
+                **kwargs, 'mode': 'predict'}  # highest priority args on the right
         prompts = args.pop('prompts', None)  # for SAM-type models
 
         if not self.predictor:
@@ -266,8 +279,16 @@ class Model(nn.Module):
             validator (BaseValidator): Customized validator.
             **kwargs : Any other args accepted by the validators. To see all args check 'configuration' section in docs
         """
+        # fix to employ the provided cfg
+        provided_cfg = yaml_load(checks.check_yaml(kwargs['cfg'])) if kwargs.get('cfg') else {}
+
+        # removing this custom variable to avoid initialisation errors
+        if 'conf_pred' in provided_cfg:
+            provided_cfg.pop('conf_pred')
+
         custom = {'rect': True}  # method defaults
-        args = {**self.overrides, **custom, **kwargs, 'mode': 'val'}  # highest priority args on the right
+        args = {**provided_cfg, **self.overrides, **custom, **kwargs,
+                'mode': 'val'}  # highest priority args on the right
 
         validator = (validator or self._smart_load('validator'))(args=args, _callbacks=self.callbacks)
         validator(model=self.model)
@@ -325,6 +346,11 @@ class Model(nn.Module):
         checks.check_pip_update_available()
 
         overrides = yaml_load(checks.check_yaml(kwargs['cfg'])) if kwargs.get('cfg') else self.overrides
+
+        # removing this custom variable to avoid initialisation errors
+        if 'conf_pred' in overrides:
+            overrides.pop('conf_pred')
+
         custom = {'data': TASK2DATA[self.task]}  # method defaults
         args = {**overrides, **custom, **kwargs, 'mode': 'train'}  # highest priority args on the right
         if args.get('resume'):
