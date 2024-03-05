@@ -45,8 +45,8 @@ thop>=0.1.1  # FLOPs computation
 # roboflow
 
 # Emacs python env
-autopep8==2.0.4
-ipython==8.18.1
-jedi==0.19.1
-pyflakes==3.1.0
-pylint==3.0.2
+# autopep8==2.0.4
+# ipython==8.18.1
+# jedi==0.19.1
+# pyflakes==3.1.0
+# pylint==3.0.2
