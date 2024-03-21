@@ -899,7 +899,8 @@ class Format:
             img = np.expand_dims(img, -1)
 
         # quick fix to have float images
-        img = np.ascontiguousarray(img.transpose(2, 0, 1)[::-1], dtype=np.float)
+        # TODO: SHOULD WE USE np.float32 or np.float64?
+        img = np.ascontiguousarray(img.transpose(2, 0, 1)[::-1], dtype=float)
         img = torch.from_numpy(img)
 
         return img
