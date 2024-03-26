@@ -154,8 +154,11 @@ class BaseTrainer:
         for callback in self.callbacks.get(event, []):
             callback(self)
 
-    def train(self):
+    def train(self, *, model_yaml_file='', weights_path=''):
         """Allow device='', device=None on Multi-GPU systems to default to device=0."""
+        assert isinstance(model_yaml_file, str), type(model_yaml_file)
+        assert isinstance(weights_path, str), type(weights_path)
+
         if isinstance(self.args.device, str) and len(self.args.device):  # i.e. device='0' or device='0,1,2,3'
             world_size = len(self.args.device.split(','))
         elif isinstance(self.args.device, (tuple, list)):  # i.e. device=[0, 1, 2, 3] (multi-GPU from CLI is list)
@@ -177,7 +180,8 @@ class BaseTrainer:
                 self.args.batch = 16
 
             # Command
-            cmd, file = generate_ddp_command(world_size, self)
+            cmd, file = generate_ddp_command(
+                world_size, self, model_yaml_file=model_yaml_file, weights_path=weights_path)
             try:
                 LOGGER.info(f'{colorstr("DDP:")} debug command {" ".join(cmd)}')
                 subprocess.run(cmd, check=True)
