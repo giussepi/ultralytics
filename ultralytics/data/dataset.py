@@ -1,5 +1,6 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 license
 import contextlib
+import os
 from itertools import repeat
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -320,7 +321,9 @@ def save_dataset_cache_file(prefix, path, x):
         if path.exists():
             path.unlink()  # remove *.cache file if exists
         np.save(str(path), x)  # save cache for next time
-        path.with_suffix('.cache.npy').rename(path)  # remove .npy suffix
+        # Workaround to avoid errors when using multiple GPUs #################
+        if os.path.isfile(path.with_suffix('.cache.npy')):
+            path.with_suffix('.cache.npy').rename(path)  # remove .npy suffix
         LOGGER.info(f'{prefix}New cache created: {path}')
     else:
         LOGGER.warning(f'{prefix}WARNING ⚠️ Cache directory {path.parent} is not writeable, cache not saved.')

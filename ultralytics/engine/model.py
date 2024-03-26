@@ -183,6 +183,9 @@ class Model(nn.Module):
         if isinstance(weights, (str, Path)):
             weights, self.ckpt = attempt_load_one_weight(weights)
         self.model.load(weights)
+        # storing weights path in the object instance
+        self.weights_path = weights.pt_path
+
         return self
 
     def info(self, detailed=False, verbose=True):
@@ -358,10 +361,17 @@ class Model(nn.Module):
 
         self.trainer = (trainer or self._smart_load('trainer'))(overrides=args, _callbacks=self.callbacks)
         if not args.get('resume'):  # manually set model only if not resuming
+            # note: passing the detection model and its config (custom_yolov8n.yaml) as dict
             self.trainer.model = self.trainer.get_model(weights=self.model if self.ckpt else None, cfg=self.model.yaml)
             self.model = self.trainer.model
         self.trainer.hub_session = self.session  # attach optional HUB session
-        self.trainer.train()
+
+        # Passing extra data to the trainer
+        self.trainer.train(
+            model_yaml_file=self.model.yaml['yaml_file'],
+            weights_path=getattr(self, 'weights_path', None)
+        )
+
         # Update model and cfg after training
         if RANK in (-1, 0):
             ckpt = self.trainer.best if self.trainer.best.exists() else self.trainer.last
