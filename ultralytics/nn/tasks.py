@@ -6,6 +6,7 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+from tabulate import tabulate
 
 from ultralytics.nn.modules import (AIFI, C1, C2, C3, C3TR, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3Ghost, C3x,
                                     Classify, Concat, Conv, Conv2, ConvTranspose, Detect, DWConv, DWConvTranspose2d,
@@ -675,6 +676,9 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
     ch = [ch]
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
 
+    if verbose:
+        tabulate_data = [['enum_idx', 'from_idx', 'depth_gain', 'num_params', 'layer', 'args']]
+
     for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):  # from, number, module, args
         m = getattr(torch.nn, m[3:]) if 'nn.' in m else globals()[m]  # get module
         for j, a in enumerate(args):
@@ -721,12 +725,15 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         m.np = sum(x.numel() for x in m_.parameters())  # number params
         m_.i, m_.f, m_.type = i, f, t  # attach index, 'from' index, type
         if verbose:
-            LOGGER.info(f'{i:>3}{str(f):>20}{n_:>3}{m.np:10.0f}  {t:<45}{str(args):<30}')  # print
+            tabulate_data.append([i, f, n_, f'{m.np:10.0f}',  f'{t:<45}', f'{str(args):<30}'])
         save.extend(x % i for x in ([f] if isinstance(f, int) else f) if x != -1)  # append to savelist
         layers.append(m_)
         if i == 0:
             ch = []
         ch.append(c2)
+
+    if verbose:
+        LOGGER.info(tabulate(tabulate_data, headers='firstrow'))
     return nn.Sequential(*layers), sorted(save)
 
 
