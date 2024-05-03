@@ -136,18 +136,27 @@ class TestDFL(MixinTest):
         yield layer
         del layer
 
-    def test_init(self, get_layer_instance):
+    def test_init_1(self, get_layer_instance):
         m = get_layer_instance
         assert len(m._modules) == 1
         assert isinstance(m._modules['conv'], torch.nn.Conv2d), type(m._modules['conv'])
-        assert hasattr(m, 'c1')
-        assert m.c1 == 16
+        assert hasattr(m, 'conv_ch')
+        assert hasattr(m, 'o_ch')
+        assert m.conv_ch == 16
+        assert m.o_ch == 6
 
-    def test_forward(self, get_layer_instance,):
+    def test_forward_1(self, get_layer_instance,):
         m = get_layer_instance
-        input_ = torch.rand(1, 64, 21)
+        input_ = torch.rand(1, 96, 73)
         output = m(input_)
-        expected_shape = [1, 4, 21]
+        expected_shape = [1, 6, 73]
         actual_shape = list(output.shape)
 
         assert actual_shape == expected_shape
+
+    def test_forward_2(self, get_layer_instance,):
+        # wrong input channels
+        m = get_layer_instance
+        input_ = torch.rand(1, 64, 73)
+        with pytest.raises(AssertionError):
+            m(input_)

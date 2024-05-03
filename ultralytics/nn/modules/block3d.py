@@ -11,7 +11,6 @@ import torch
 from torch import nn
 
 from ultralytics.nn.modules.conv3d import Conv
-from ultralytics.nn.modules.block import DFL
 
 
 __all__ = ('Bottleneck', 'C2f', 'DFL', 'SPPF',)
@@ -60,6 +59,40 @@ class C2f(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
+
+
+class DFL(nn.Module):
+    """
+    Integral module of Distribution Focal Loss (DFL).
+
+    Proposed in Generalized Focal Loss https://ieeexplore.ieee.org/document/9792391
+    """
+
+    def __init__(self, conv_ch: int = 16, o_ch: int = 6):
+        """
+        kwargs:
+            conv_ch <int>: Input channels of the Conv2d layer.
+                           Default 16
+            o_ch    <int>: Output channels.
+                           Default 6
+        """
+        super().__init__()
+        self.conv_ch = conv_ch
+        self.o_ch = o_ch
+
+        self.conv = nn.Conv2d(self.conv_ch, 1, 1, bias=False).requires_grad_(False)
+        x = torch.arange(self.conv_ch, dtype=torch.float)
+        self.conv.weight.data[:] = nn.Parameter(x.view(1, self.conv_ch, 1, 1))
+
+    def forward(self, x: torch.Tensor):
+        """Applies a transformer layer on input tensor 'x' and returns a tensor."""
+        b, c, a = x.shape  # batch, channels, anchors
+
+        assert c == self.conv_ch * self.o_ch, \
+            f'input channels ({c}) != conv_ch({self.conv_ch}) * o_ch({self.o_ch})'
+
+        return self.conv(x.view(b, self.o_ch, self.conv_ch, a).transpose(2, 1).softmax(1))\
+                   .view(b, self.o_ch, a)
 
 
 class SPPF(nn.Module):
