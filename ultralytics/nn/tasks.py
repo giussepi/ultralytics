@@ -220,9 +220,27 @@ class BaseModel(nn.Module):
 class DetectionModel(BaseModel):
     """YOLOv8 detection model."""
 
-    def __init__(self, cfg='yolov8n.yaml', ch=3, nc=None, verbose=True):  # model, input channels, number of classes
-        """Initialize the YOLOv8 detection model with the given config and parameters."""
+    def __init__(self,
+                 cfg: [str | dict] = 'yolov8n.yaml',
+                 ch: int = 3,
+                 nc: [int | None] = None,
+                 verbose: bool = True
+                 ):
+        """
+        Initialize the YOLOv8 detection model with the given config and parameters.
+
+        kwargs:
+            cfg      <str|dict>: yaml model to load
+                            Default 'yolov8n.yaml'.
+            ch       <int>: input channels.
+                            Default 3
+            nc       <int>: number of classes.
+                            Default None
+            verbose <bool>: Whether ot nor not print extra messages
+                            Default True
+        """
         super().__init__()
+
         self.yaml = cfg if isinstance(cfg, dict) else yaml_model_load(cfg)  # cfg dict
 
         # Define model
