@@ -19,6 +19,8 @@ from ultralytics.utils.tal3d import dist2bbox, make_anchors
 
 __all__ = [
     'Detect',
+    'Segment',
+    'Pose',
 ]
 
 
@@ -99,3 +101,17 @@ class Detect(nn.Module):
         for a, b, s in zip(m.cv2, m.cv3, m.stride):  # from
             a[-1].bias.data[:] = 1.0  # box
             b[-1].bias.data[:m.nc] = math.log(5 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
+
+
+class Segment(Detect):
+    """YOLOv8 Segment head for segmentation models."""
+
+    def __init__(self, nc=80, nm=32, npr=256, ch=()):
+        raise NotImplementedError
+
+
+class Pose(Detect):
+    """YOLOv8 Pose head for keypoints models."""
+
+    def __init__(self, nc=80, kpt_shape=(17, 3), ch=()):
+        raise NotImplementedError
