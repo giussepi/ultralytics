@@ -302,9 +302,9 @@ def initialize_weights(model):
     """Initialize model weights to random values."""
     for m in model.modules():
         t = type(m)
-        if t is nn.Conv2d:
+        if t in (nn.Conv2d, nn.Conv3d):
             pass  # nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-        elif t is nn.BatchNorm2d:
+        elif t in (nn.BatchNorm2d, nn.BatchNorm3d):
             m.eps = 1e-3
             m.momentum = 0.03
         elif t in [nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6, nn.SiLU]:
