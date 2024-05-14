@@ -16,6 +16,8 @@ __all__ = [
 class v8DetectionLoss:
     """Criterion class for computing training losses."""
     # TODO: implement it!
+    # TODO: ultralytics/nn/tests/test_tasks3d.py -> TestDetectionModel.test_init_criterion needs
+    #       to be updated after implementing this function
 
     def __init__(self, model):  # model must be de-paralleled
         """
