@@ -158,7 +158,21 @@ class BaseModel3D(BaseModel2D):
 
 
 class DetectionModel(BaseModel3D):
-    """YOLOv8 3D detection model."""
+    """
+    YOLOv8 3D detection model.
+
+    Usage:
+        from ultralytics import YOLO
+        from ultralytics.models import yolo3d
+
+        qmodel = YOLO('ultralytics/cfg/models/v8/custom_yolov8n.yaml',
+                      task=yolo3d.YOLOTasks.DETECT3D)
+        qmodel.train(data='<some_path>/peartree.yaml',
+                     cfg='<another_path>''/custom_config.yaml')
+        model.load('best.pt')
+        model.val(data="<some_path>/peartree.yaml",
+                  cfg='<another_path>/custom_config.yaml')
+    """
 
     def __init__(self,
                  cfg: [str | dict] = 'yolov8n.yaml',
