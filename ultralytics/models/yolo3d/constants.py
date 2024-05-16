@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-ultralytics/models/yolo/constants.py
+ultralytics/models/yolo3d/constants.py
 
 Copyright 2024 (C) Pear Bio Ltd
 All rights reserved.
@@ -13,12 +13,9 @@ __all__ = [
 
 
 class YOLOTasks:
-    CLASSIFY = 'classify'
-    DETECT = 'detect'
-    SEGMENT = 'segment'
-    POSE = 'pose'
+    DETECT3D = 'detect3d'
 
-    MEMBERS = (CLASSIFY, DETECT, SEGMENT, POSE)
+    MEMBERS = (DETECT3D, )
 
     @classmethod
     def validate(cls, task: str):
