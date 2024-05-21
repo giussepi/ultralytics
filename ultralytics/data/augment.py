@@ -18,6 +18,25 @@ from ultralytics.utils.ops import segment2box
 from .utils import polygons2masks, polygons2masks_overlap
 
 
+__all__ = [
+    'BaseTransform',
+    'Compose',
+    'BaseMixTransform',
+    'Mosaic',
+    'MixUp',
+    'RandomPerspective',
+    'RandomHSV',
+    'RandomFlip',
+    'LetterBox',
+    'CopyPaste',
+    'Albumentations',
+    'Format',
+    'ClassifyLetterBox',
+    'CenterCrop',
+    'ToTensor',
+]
+
+
 # TODO: we might need a BaseTransform to make all these augments be compatible with both classification and semantic
 class BaseTransform:
     """
@@ -701,7 +720,7 @@ class LetterBox:
         else:
             return img
 
-    def _update_labels(self, labels, ratio, padw, padh):
+    def _update_labels(self, labels: dict, ratio: tuple, padw: float, padh: float):
         """Update labels."""
         labels['instances'].convert_bbox(format='xyxy')
         labels['instances'].denormalize(*labels['img'].shape[:2][::-1])
