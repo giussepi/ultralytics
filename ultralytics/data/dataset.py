@@ -1,4 +1,12 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
+# -*- coding: utf-8 -*-
+"""
+ultralytics/data/dataset.py
+
+Ultralytics YOLO 🚀, AGPL-3.0 license
+Copyright 2024 (C) Pear Bio Ltd
+Modified by: Giussepi Lopez
+"""
+#
 import contextlib
 import os
 from itertools import repeat
@@ -18,6 +26,14 @@ from .utils import HELP_URL, LOGGER, get_hash, img2label_paths, verify_image, ve
 
 # Ultralytics dataset *.cache version, >= 1.0.0 for YOLOv8
 DATASET_CACHE_VERSION = '1.0.3'
+
+
+__all__ = [
+    'YOLODataset',
+    'YOLODataset3D',
+    'ClassificationDataset',
+    'SemanticDataset',
+]
 
 
 class YOLODataset(BaseDataset):
@@ -69,6 +85,7 @@ class YOLODataset(BaseDataset):
                 nf += nf_f
                 ne += ne_f
                 nc += nc_f
+
                 if im_file:
                     x['labels'].append(
                         dict(
@@ -93,6 +110,7 @@ class YOLODataset(BaseDataset):
         x['results'] = nf, nm, ne, nc, len(self.im_files)
         x['msgs'] = msgs  # warnings
         save_dataset_cache_file(self.prefix, path, x)
+
         return x
 
     def get_labels(self):
@@ -135,6 +153,7 @@ class YOLODataset(BaseDataset):
                 lb['segments'] = []
         if len_cls == 0:
             LOGGER.warning(f'WARNING ⚠️ No labels found in {cache_path}, training may not work correctly. {HELP_URL}')
+
         return labels
 
     def build_transforms(self, hyp=None):
@@ -164,7 +183,8 @@ class YOLODataset(BaseDataset):
         hyp.mixup = 0.0  # keep the same behavior as previous v8 close-mosaic
         self.transforms = self.build_transforms(hyp)
 
-    def update_labels_info(self, label):
+    @staticmethod
+    def update_labels_info(label: dict) -> dict:
         """Custom your label format here."""
         # NOTE: cls is not with bboxes now, classification and semantic segmentation need an independent cls label
         # We can make it also support classification and semantic segmentation by add or remove some dict keys there.
@@ -177,7 +197,7 @@ class YOLODataset(BaseDataset):
         return label
 
     @staticmethod
-    def collate_fn(batch):
+    def collate_fn(batch: dict):
         """Collates data samples into batches."""
         new_batch = {}
         keys = batch[0].keys()
@@ -190,10 +210,75 @@ class YOLODataset(BaseDataset):
                 value = torch.cat(value, 0)
             new_batch[k] = value
         new_batch['batch_idx'] = list(new_batch['batch_idx'])
+
         for i in range(len(new_batch['batch_idx'])):
             new_batch['batch_idx'][i] += i  # add target image index for build_targets()
         new_batch['batch_idx'] = torch.cat(new_batch['batch_idx'], 0)
+
         return new_batch
+
+
+class YOLODataset3D(YOLODataset):
+    def cache_labels(self, path=Path('./labels.cache')):
+        """
+        Cache dataset labels, check images and read shapes.
+
+        Args:
+            path (Path): path where to save the cache file (default: Path('./labels.cache')).
+        Returns:
+            (dict): labels.
+        """
+        x = {'labels': []}
+        nm, nf, ne, nc, msgs = 0, 0, 0, 0, []  # number missing, found, empty, corrupt, messages
+        desc = f'{self.prefix}Scanning {path.parent / path.stem}...'
+        total = len(self.im_files)
+        # TODO: review where ndim comes from, it must reflect that this is 3D dataset
+        nkpt, ndim = self.data.get('kpt_shape', (0, 0))
+
+        if self.use_keypoints and (nkpt <= 0 or ndim not in (2, 3)):
+            raise ValueError("'kpt_shape' in data.yaml missing or incorrect. Should be a list with [number of "
+                             "keypoints, number of dims (2 for x,y or 3 for x,y,visible)], i.e. 'kpt_shape: [17, 3]'")
+
+        with ThreadPool(NUM_THREADS) as pool:
+            results = pool.imap(func=verify_image_label,
+                                iterable=zip(self.im_files, self.label_files, repeat(self.prefix),
+                                             repeat(self.use_keypoints), repeat(len(self.data['names'])), repeat(nkpt),
+                                             repeat(ndim)))
+            pbar = TQDM(results, desc=desc, total=total)
+            for im_file, lb, shape, segments, keypoint, nm_f, nf_f, ne_f, nc_f, msg in pbar:
+                nm += nm_f
+                nf += nf_f
+                ne += ne_f
+                nc += nc_f
+                if lb.size != 0:
+                    breakpoint()
+
+                if im_file:
+                    x['labels'].append(
+                        dict(
+                            im_file=im_file,
+                            shape=shape,
+                            cls=lb[:, 0:1],  # n, 1
+                            bboxes=lb[:, 1:],  # n, 4
+                            segments=segments,
+                            keypoints=keypoint,
+                            normalized=True,
+                            bbox_format='xyzwhd'))
+                if msg:
+                    msgs.append(msg)
+                pbar.desc = f'{desc} {nf} images, {nm + ne} backgrounds, {nc} corrupt'
+            pbar.close()
+
+        if msgs:
+            LOGGER.info('\n'.join(msgs))
+        if nf == 0:
+            LOGGER.warning(f'{self.prefix}WARNING ⚠️ No labels found in {path}. {HELP_URL}')
+        x['hash'] = get_hash(self.label_files + self.im_files)
+        x['results'] = nf, nm, ne, nc, len(self.im_files)
+        x['msgs'] = msgs  # warnings
+        save_dataset_cache_file(self.prefix, path, x)
+
+        return x
 
 
 # Classification dataloaders -------------------------------------------------------------------------------------------
@@ -317,6 +402,7 @@ def load_dataset_cache_file(path):
 def save_dataset_cache_file(prefix, path, x):
     """Save an Ultralytics dataset *.cache dictionary x to path."""
     x['version'] = DATASET_CACHE_VERSION  # add cache version
+
     if is_dir_writeable(path.parent):
         if path.exists():
             path.unlink()  # remove *.cache file if exists

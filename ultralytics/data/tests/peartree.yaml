@@ -1,0 +1,18 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Pear-Tree dataset by PearBio
+# Copyright 2023 (C) Pear Bio Ltd
+# All rights reserved.
+# Original Author: Giussepi Lopez
+# ├── ultralytics
+# └── datasets
+#     └── Pear-Tree-DB
+
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: ultralytics/data/tests/tiny-Pear-Tree-DB-5  # dataset root dir
+train: train
+val: val
+test: test
+
+# Classes
+names:
+  0: colourdetection
