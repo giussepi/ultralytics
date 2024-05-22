@@ -7,9 +7,12 @@ All rights reserved.
 Original Author: Giussepi Lopez
 """
 
+import pytest
+
 from ultralytics.models.yolo.constants import YOLOTasks
 
 
+@pytest.mark.pearbioquicktests
 class TestYOLOTasks:
 
     def test_validate_1(self):

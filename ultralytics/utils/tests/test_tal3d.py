@@ -13,6 +13,7 @@ import torch
 from ultralytics.utils.tal3d import make_anchors, dist2bbox
 
 
+@pytest.mark.pearbioquicktests
 class Testmake_anchors:
 
     def test_1(self):
@@ -106,6 +107,7 @@ class Testmake_anchors:
         assert torch.equal(actual_anchors, expected_anchors)
 
 
+@pytest.mark.pearbioquicktests
 class Testdist2bbox:
 
     @pytest.fixture

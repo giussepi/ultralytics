@@ -28,6 +28,7 @@ LABEL_2D_PATH = 'ultralytics/data/tests/label.pkl'
 BATCH_2D_PATH = 'ultralytics/data/tests/batch2d.pkl'
 
 
+@pytest.mark.pearbioquicktests
 class TestYOLODataset:
 
     @pytest.fixture

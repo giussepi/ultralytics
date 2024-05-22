@@ -32,6 +32,7 @@ class MixinTest(ABC):
         raise NotImplementedError
 
 
+@pytest.mark.pearbioquicktests
 class TestSPPF(MixinTest):
 
     @pytest.fixture
@@ -56,6 +57,7 @@ class TestSPPF(MixinTest):
         assert actual_shape == expected_shape
 
 
+@pytest.mark.pearbioquicktests
 class TestBottleneck(MixinTest):
 
     @pytest.fixture
@@ -94,6 +96,7 @@ class TestBottleneck(MixinTest):
         assert actual_shape == expected_shape
 
 
+@pytest.mark.pearbioquicktests
 class TestC2f(MixinTest):
 
     @pytest.fixture
@@ -128,6 +131,7 @@ class TestC2f(MixinTest):
         assert actual_shape == expected_shape
 
 
+@pytest.mark.pearbioquicktests
 class TestDFL(MixinTest):
 
     @pytest.fixture

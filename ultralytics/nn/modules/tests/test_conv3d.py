@@ -13,6 +13,7 @@ import torch
 from ultralytics.nn.modules.conv3d import Conv
 
 
+@pytest.mark.pearbioquicktests
 class TestConv:
 
     @pytest.fixture

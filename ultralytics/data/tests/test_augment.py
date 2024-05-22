@@ -13,6 +13,7 @@ import pytest
 from ultralytics.data.augment import LetterBox
 
 
+@pytest.mark.pearbioquicktests
 class TestLetterBox:
 
     @pytest.fixture

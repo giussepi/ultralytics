@@ -17,6 +17,7 @@ from ultralytics.nn.modules.block3d import DFL
 from ultralytics.nn.modules.head3d import Detect
 
 
+@pytest.mark.pearbioquicktests
 class TestDetect:
 
     @pytest.fixture

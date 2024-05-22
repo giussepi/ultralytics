@@ -29,7 +29,7 @@ from ultralytics.utils.loss3d import v8DetectionLoss
 #         # dmodel = ODetectionModel(cfg='yolov8n.yaml', ch=3, nc=None, verbose=True)
 #         dmodel = ODetectionModel(cfg='ultralytics/cfg/models/v8/custom_yolov8n.yaml', ch=3, nc=None, verbose=True)
 
-
+@pytest.mark.pearbioquicktests
 class Testparse_model:
 
     def test_1(self):
@@ -404,6 +404,7 @@ class Testparse_model:
         assert str(actual_model).strip() == expected_model.strip()
 
 
+@pytest.mark.pearbioquicktests
 class TestDetectionModel:
 
     @pytest.fixture

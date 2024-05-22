@@ -8,15 +8,14 @@ Original Author: Giussepi Lopez
 """
 
 from collections import OrderedDict
-from copy import deepcopy
 
 import pytest
-import torch
 from torch import nn
 
 from ultralytics.utils.torch_utils import initialize_weights
 
 
+@pytest.mark.pearbioquicktests
 class Testinitialize_weights:
 
     @pytest.fixture
