@@ -12,16 +12,16 @@ import torch
 
 
 __all__ = [
-    'ltdwhd2xyzwhd',
-    'ltdwhd2xyzxyz',
-    'xyzwhd2ltdwhd',
+    'ltwhd2xyzwhd',
+    'ltwhd2xyzxyz',
+    'xyzwhd2ltwhd',
     'xyzwhd2xyzxyz',
-    'xyzxyz2ltdwhd',
+    'xyzxyz2ltwhd',
     'xyzxyz2xyzwhd'
 ]
 
 
-def ltdwhd2xyzwhd(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
+def ltwhd2xyzwhd(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
     """
     Convert nx6 boxes from [x1, y1, z1, w, h, d] to [x, y, z w, h, d] where xyz1=top-left, xyz=center.
     Note: 3D version of ltwh2xywh
@@ -43,7 +43,7 @@ def ltdwhd2xyzwhd(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
     return y
 
 
-def ltdwhd2xyzxyz(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
+def ltwhd2xyzxyz(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
     """
     It converts the bounding box from [x1, y1,z1, w, h, d] to [x1, y1, z1, x2, y2, z2]
     where xyz1=top-left, xyz2=bottom-right.
@@ -66,7 +66,7 @@ def ltdwhd2xyzxyz(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
     return y
 
 
-def xyzwhd2ltdwhd(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
+def xyzwhd2ltwhd(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
     """
     Convert the bounding box format from [x, y, z, w, h, d] to [x1, y1, z1, w, h, d],
     where x1, y1, z1 are the top-left coordinates.
@@ -120,7 +120,7 @@ def xyzwhd2xyzxyz(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
     return y
 
 
-def xyzxyz2ltdwhd(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
+def xyzxyz2ltwhd(x: [torch.Tensor | np.ndarray]) -> torch.Tensor | np.ndarray:
     """
     Convert nx6 bounding boxes from [x1, y1, z1, x2, y2, z2] to [x1, y1, z1,  w, h, d],
     where xyz1=top-left, xyz2=bottom-right.

@@ -11,8 +11,8 @@ from abc import ABC
 import numpy as np
 import pytest
 
-from ultralytics.utils.ops3d import ltdwhd2xyzwhd, ltdwhd2xyzxyz, xyzwhd2ltdwhd, xyzwhd2xyzxyz, \
-    xyzxyz2ltdwhd, xyzxyz2xyzwhd
+from ultralytics.utils.ops3d import ltwhd2xyzwhd, ltwhd2xyzxyz, xyzwhd2ltwhd, xyzwhd2xyzxyz, \
+    xyzxyz2ltwhd, xyzxyz2xyzwhd
 
 
 class MixinTest(ABC):
@@ -30,7 +30,7 @@ class MixinTest(ABC):
 
 
 @pytest.mark.pearbioquicktests
-class Testltdwhd2xyzwhd(MixinTest):
+class Testltwhd2xyzwhd(MixinTest):
 
     def test_1(self, get_bboxes):
         bboxes = get_bboxes
@@ -41,12 +41,12 @@ class Testltdwhd2xyzwhd(MixinTest):
             ],
             dtype=np.float32
         )
-        actual_bboxes = ltdwhd2xyzwhd(bboxes)
+        actual_bboxes = ltwhd2xyzwhd(bboxes)
         assert np.allclose(actual_bboxes, expected_bboxes, 1e-5, 1e-5)
 
 
 @pytest.mark.pearbioquicktests
-class Testltdwhd2xyzxyz(MixinTest):
+class Testltwhd2xyzxyz(MixinTest):
     def test_1(self, get_bboxes):
         bboxes = get_bboxes
         expected_bboxes = np.array(
@@ -56,12 +56,12 @@ class Testltdwhd2xyzxyz(MixinTest):
             ],
             dtype=np.float32
         )
-        actual_bboxes = ltdwhd2xyzxyz(bboxes)
+        actual_bboxes = ltwhd2xyzxyz(bboxes)
         assert np.allclose(actual_bboxes, expected_bboxes, 1e-5, 1e-5)
 
 
 @pytest.mark.pearbioquicktests
-class Testxyzwhd2ltdwhd(MixinTest):
+class Testxyzwhd2ltwhd(MixinTest):
     def test_1(self, get_bboxes):
         bboxes = get_bboxes
         expected_bboxes = np.array(
@@ -71,7 +71,7 @@ class Testxyzwhd2ltdwhd(MixinTest):
             ],
             dtype=np.float32
         )
-        actual_bboxes = xyzwhd2ltdwhd(bboxes)
+        actual_bboxes = xyzwhd2ltwhd(bboxes)
         assert np.allclose(actual_bboxes, expected_bboxes, 1e-5, 1e-5)
 
 
@@ -92,7 +92,7 @@ class Testxyzwhd2xyzxyz(MixinTest):
 
 
 @pytest.mark.pearbioquicktests
-class Testxyzxyz2ltdwhd(MixinTest):
+class Testxyzxyz2ltwhd(MixinTest):
     def test_1(self, get_bboxes):
         bboxes = get_bboxes
         expected_bboxes = np.array(
@@ -102,7 +102,7 @@ class Testxyzxyz2ltdwhd(MixinTest):
             ],
             dtype=np.float32
         )
-        actual_bboxes = xyzxyz2ltdwhd(bboxes)
+        actual_bboxes = xyzxyz2ltwhd(bboxes)
         assert np.allclose(actual_bboxes, expected_bboxes, 1e-5, 1e-5)
 
 
