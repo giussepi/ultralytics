@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+""" ultralytics/utils/instance.py """
 # Ultralytics YOLO 🚀, AGPL-3.0 license
 
 from collections import abc
@@ -61,7 +63,7 @@ class Bboxes:
         assert format in _formats, f'Invalid bounding box format: {format}, format must be one of {_formats}'
         if self.format == format:
             return
-        elif self.format == 'xyxy':
+        if self.format == 'xyxy':
             func = xyxy2xywh if format == 'xywh' else xyxy2ltwh
         elif self.format == 'xywh':
             func = xywh2xyxy if format == 'xyxy' else xywh2ltwh
@@ -73,6 +75,7 @@ class Bboxes:
     def areas(self):
         """Return box areas."""
         self.convert('xyxy')
+
         return (self.bboxes[:, 2] - self.bboxes[:, 0]) * (self.bboxes[:, 3] - self.bboxes[:, 1])
 
     # def denormalize(self, w, h):
@@ -167,9 +170,13 @@ class Bboxes:
             length as the number of bounding boxes.
         """
         if isinstance(index, int):
-            return Bboxes(self.bboxes[index].view(1, -1))
+            # return Bboxes(self.bboxes[index].view(1, -1))
+            # view does not work as intended on numpy, using reshape instead
+            return Bboxes(self.bboxes[index].reshape(1, -1))
+
         b = self.bboxes[index]
         assert b.ndim == 2, f'Indexing on Bboxes with {index} failed to return a matrix!'
+
         return Bboxes(b)
 
 
