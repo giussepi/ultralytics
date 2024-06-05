@@ -530,10 +530,12 @@ class Metric(SimpleClass):
         nc (int): Number of classes.
 
     Methods:
+        ap33(): AP at IoU threshold of 0.33 for all classes. Returns: List of AP scores. Shape: (nc,) or [].
         ap50(): AP at IoU threshold of 0.5 for all classes. Returns: List of AP scores. Shape: (nc,) or [].
         ap(): AP at IoU thresholds from 0.5 to 0.95 for all classes. Returns: List of AP scores. Shape: (nc,) or [].
         mp(): Mean precision of all classes. Returns: Float.
         mr(): Mean recall of all classes. Returns: Float.
+        map33(): Mean AP at IoU threshold of 0.33 for all classes. Returns: Float.
         map50(): Mean AP at IoU threshold of 0.5 for all classes. Returns: Float.
         map75(): Mean AP at IoU threshold of 0.75 for all classes. Returns: Float.
         map(): Mean AP at IoU thresholds from 0.5 to 0.95 for all classes. Returns: Float.
@@ -544,14 +546,36 @@ class Metric(SimpleClass):
         update(results): Update metric attributes with new evaluation results.
     """
 
-    def __init__(self) -> None:
-        """Initializes a Metric instance for computing evaluation metrics for the YOLOv8 model."""
+    def __init__(self, fitness_weights: list, /) -> None:
+        """
+        Initializes a Metric instance for computing evaluation metrics for the YOLOv8 model.
+
+        Args:
+            fitness_weights <list>: Weights employed with P, R, mAp@0.33, mAP@0.5, mAP@0.5:0.95
+                                     when calculating the fitness.
+                                     E.g. [0.0, 0.0, 0.0, 0.1, 0.9]
+        """
+        assert isinstance(fitness_weights, list), type(fitness_weights)
+        assert len(fitness_weights) == 5, \
+            f'len(fitness_weights) is {len(fitness_weights)} but it must be 5'
+
         self.p = []  # (nc, )
         self.r = []  # (nc, )
         self.f1 = []  # (nc, )
         self.all_ap = []  # (nc, 10)
         self.ap_class_index = []  # (nc, )
         self.nc = 0
+        self.fitness_weights = fitness_weights
+
+    @property
+    def ap33(self):
+        """
+        Returns the Average Precision (AP) at an IoU threshold of 0.33 for all classes.
+
+        Returns:
+            (np.ndarray, list): Array of shape (nc,) with AP33 values per class, or an empty list if not available.
+        """
+        return self.all_ap[:, 10] if len(self.all_ap) else []
 
     @property
     def ap50(self):
@@ -571,7 +595,7 @@ class Metric(SimpleClass):
         Returns:
             (np.ndarray, list): Array of shape (nc,) with AP50-95 values per class, or an empty list if not available.
         """
-        return self.all_ap.mean(1) if len(self.all_ap) else []
+        return self.all_ap[:, :-1].mean(1) if len(self.all_ap) else []
 
     @property
     def mp(self):
@@ -592,6 +616,16 @@ class Metric(SimpleClass):
             (float): The mean recall of all classes.
         """
         return self.r.mean() if len(self.r) else 0.0
+
+    @property
+    def map33(self):
+        """
+        Returns the mean Average Precision (mAP) at an IoU threshold of 0.33.
+
+        Returns:
+            (float): The mAP at an IoU threshold of 0.33.
+        """
+        return self.all_ap[:, 10].mean() if len(self.all_ap) else 0.0
 
     @property
     def map50(self):
@@ -621,15 +655,15 @@ class Metric(SimpleClass):
         Returns:
             (float): The mAP over IoU thresholds of 0.5 - 0.95 in steps of 0.05.
         """
-        return self.all_ap.mean() if len(self.all_ap) else 0.0
+        return self.all_ap[:, :-1].mean() if len(self.all_ap) else 0.0
 
     def mean_results(self):
-        """Mean of results, return mp, mr, map50, map."""
-        return [self.mp, self.mr, self.map50, self.map]
+        """Mean of results, return mp, mr, map33, map50, map."""
+        return [self.mp, self.mr, self.map33, self.map50, self.map]
 
     def class_result(self, i):
-        """Class-aware result, return p[i], r[i], ap50[i], ap[i]."""
-        return self.p[i], self.r[i], self.ap50[i], self.ap[i]
+        """Class-aware result, return p[i], r[i], ap33[i], ap50[i], ap[i]."""
+        return self.p[i], self.r[i], self.ap33[i], self.ap50[i], self.ap[i]
 
     @property
     def maps(self):
@@ -641,8 +675,7 @@ class Metric(SimpleClass):
 
     def fitness(self):
         """Model fitness as a weighted combination of metrics."""
-        w = [0.0, 0.0, 0.1, 0.9]  # weights for [P, R, mAP@0.5, mAP@0.5:0.95]
-        return (np.array(self.mean_results()) * w).sum()
+        return (np.array(self.mean_results()) * self.fitness_weights).sum()
 
     def update(self, results):
         """
@@ -687,6 +720,9 @@ class DetMetrics(SimpleClass):
         names (tuple of str): A tuple of strings that represents the names of the classes. Defaults to an empty tuple.
 
     Attributes:
+        fitness_weights <list>: Weights employed with P, R, mAp@0.33, mAP@0.5, mAP@0.5:0.95
+                                when calculating the fitness.
+                                E.g. [0.0, 0.0, 0.0, 0.1, 0.9]
         save_dir (Path): A path to the directory where the output plots will be saved.
         plot (bool): A flag that indicates whether to plot the precision-recall curves for each class.
         on_plot (func): An optional callback to pass plots path and data when they are rendered.
@@ -707,13 +743,15 @@ class DetMetrics(SimpleClass):
         curves_results: TODO
     """
 
-    def __init__(self, save_dir=Path('.'), plot=False, on_plot=None, names=()) -> None:
+    def __init__(
+            self, fitness_weights: list, save_dir=Path('.'), plot=False, on_plot=None, names=()
+    ) -> None:
         """Initialize a DetMetrics instance with a save directory, plot flag, callback function, and class names."""
         self.save_dir = save_dir
         self.plot = plot
         self.on_plot = on_plot
         self.names = names
-        self.box = Metric()
+        self.box = Metric(fitness_weights)
         self.speed = {'preprocess': 0.0, 'inference': 0.0, 'loss': 0.0, 'postprocess': 0.0}
         self.task = 'detect'
 
@@ -733,7 +771,13 @@ class DetMetrics(SimpleClass):
     @property
     def keys(self):
         """Returns a list of keys for accessing specific metrics."""
-        return ['metrics/precision(B)', 'metrics/recall(B)', 'metrics/mAP50(B)', 'metrics/mAP50-95(B)']
+        return [
+            'metrics/precision(B)',
+            'metrics/recall(B)',
+            'metrics/mAP33(B)',
+            'metrics/mAP50(B)',
+            'metrics/mAP50-95(B)',
+        ]
 
     def mean_results(self):
         """Calculate mean of detected objects & return precision, recall, mAP50, and mAP50-95."""

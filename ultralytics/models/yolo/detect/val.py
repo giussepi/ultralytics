@@ -35,8 +35,10 @@ class DetectionValidator(BaseValidator):
         self.is_coco = False
         self.class_map = None
         self.args.task = 'detect'
-        self.metrics = DetMetrics(save_dir=self.save_dir, on_plot=self.on_plot)
-        self.iouv = torch.linspace(0.5, 0.95, 10)  # iou vector for mAP@0.5:0.95
+        self.metrics = DetMetrics(fitness_weights=self.args.fitness_weights,
+                                  save_dir=self.save_dir, on_plot=self.on_plot)
+        # self.iouv = torch.linspace(0.5, 0.95, 10)  # iou vector for mAP@0.5:0.95
+        self.iouv = torch.tensor([0.5000, 0.5500, 0.6000, 0.6500, 0.7000, 0.7500, 0.8000, 0.8500, 0.9000, 0.9500, 0.33])
         self.niou = self.iouv.numel()
         self.lb = []  # for autolabelling
 
@@ -80,7 +82,7 @@ class DetectionValidator(BaseValidator):
 
     def get_desc(self):
         """Return a formatted string summarizing class metrics of YOLO model."""
-        return ('%22s' + '%11s' * 6) % ('Class', 'Images', 'Instances', 'Box(P', 'R', 'mAP50', 'mAP50-95)')
+        return ('%22s' + '%11s' * 7) % ('Class', 'Images', 'Instances', 'Box(P', 'R', 'mAP33', 'mAP50', 'mAP50-95)')
 
     def postprocess(self, preds):
         """Apply Non-maximum suppression to prediction outputs."""
@@ -129,7 +131,8 @@ class DetectionValidator(BaseValidator):
                 # TODO: maybe remove these `self.` arguments as they already are member variable
                 if self.args.plots:
                     self.confusion_matrix.process_batch(predn, labelsn)
-            self.stats.append((correct_bboxes, pred[:, 4], pred[:, 5], cls.squeeze(-1)))  # (conf, pcls, tcls)
+            self.stats.append((
+                correct_bboxes, pred[:, 4], pred[:, 5], cls.squeeze(-1)))  # (tp, conf, pred_cls, target_cls)
 
             # Save
             if self.args.save_json:
