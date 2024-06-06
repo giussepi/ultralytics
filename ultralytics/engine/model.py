@@ -369,7 +369,7 @@ class Model(nn.Module):
         # Passing extra data to the trainer
         self.trainer.train(
             model_yaml_file=self.model.yaml['yaml_file'],
-            weights_path=getattr(self, 'weights_path', None)
+            weights_path=getattr(self, 'weights_path', '')
         )
 
         # Update model and cfg after training
