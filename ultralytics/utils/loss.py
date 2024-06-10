@@ -58,6 +58,78 @@ class FocalLoss(nn.Module):
         return loss.mean(1).sum()
 
 
+class CenterLoss(nn.Module):
+    """
+    Computes a loss based on the distance between the centres of BBoxes.
+
+    Usage:
+        CenterLoss(.3)(gt_bboxes, pred_bboxes)
+    """
+
+    def __init__(self, tolerance: float = 0, /):
+        assert 0 <= tolerance < 1, f'tolerance={tolerance} is not in the range [0, 1['
+        super().__init__()
+        self.tolerance = tolerance
+        self.effective_distance = 1 - self.tolerance
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.tolerance})'
+
+    def __str__(self):
+        return self.__repr__()
+
+    def compare_centres(
+            self, pred_bbox: torch.Tensor, target_bbox: torch.Tensor, fg_mask: torch.Tensor) -> torch.Tensor:
+        """
+        The score is in the interval [0, 1[ where 1 means the bbox centres are perfeclty aligned,
+        and 0 means the bboxes do not even intersect.
+        """
+        pred_x1, pred_y1, pred_x2, pred_y2 = pred_bbox[fg_mask].chunk(4, -1)
+        target_x1, target_y1, target_x2, target_y2 = target_bbox[fg_mask].chunk(4, -1)
+
+        pred_width = pred_x2 - pred_x1
+        pred_height = pred_y2 - pred_y1
+        target_width = target_x2 - target_x1
+        target_height = target_y2 - target_y1
+
+        pred_centre_x = pred_x1 + pred_width / 2
+        pred_centre_y = pred_y1 + pred_height / 2
+        target_centre_x = target_x1 + target_width / 2
+        target_centre_y = target_y1 + target_height / 2
+
+        actual_centre_distance_x = abs(target_centre_x - pred_centre_x) * self.effective_distance
+        actual_centre_distance_y = abs(target_centre_y - pred_centre_y) * self.effective_distance
+
+        # case when bboxes are just next to each other but without any intersection
+        max_centre_dist_x = (target_width + pred_width) / 2
+        max_centre_dist_y = (target_height + pred_height) / 2
+
+        # # case when the bboxes are separated by one pixel or more
+        # if (actual_centre_distance_x > max_centre_dist_x) or (actual_centre_distance_y > max_centre_dist_y):
+        #     return 0
+
+        x_diff = (max_centre_dist_x - actual_centre_distance_x) / max_centre_dist_x
+        y_diff = (max_centre_dist_y - actual_centre_distance_y) / max_centre_dist_y
+        diff = (x_diff + y_diff) / 2
+
+        # handling cases when the bboxes are separated by one pixel or more
+        # they all set to 0 because they do not intersect
+        # idx1 = actual_centre_distance_x > max_centre_dist_x
+        # idx2 = actual_centre_distance_y > max_centre_dist_y
+        # diff[idx1+idx2] = 0
+        diff[diff < 0] = 0
+
+        return diff
+
+    def compute_loss(
+            self, pred_bbox: torch.Tensor, target_bbox: torch.Tensor, fg_mask: torch.Tensor) -> torch.Tensor:
+        return (1 - self.compare_centres(pred_bbox, target_bbox, fg_mask)).sum() / fg_mask.sum()
+
+    def forward(
+            self, pred_bbox: torch.Tensor, target_bbox: torch.Tensor, fg_mask: torch.Tensor) -> torch.Tensor:
+        return self.compute_loss(pred_bbox, target_bbox, fg_mask)
+
+
 class BboxLoss(nn.Module):
     """Criterion class for computing training losses during training."""
 
@@ -133,6 +205,7 @@ class v8DetectionLoss:
 
         self.assigner = TaskAlignedAssigner(topk=10, num_classes=self.nc, alpha=0.5, beta=6.0)
         self.bbox_loss = BboxLoss(m.reg_max - 1, use_dfl=self.use_dfl).to(device)
+        self.center_loss = CenterLoss(h.centerl_tolerance)
         self.proj = torch.arange(m.reg_max, dtype=torch.float, device=device)
 
     def preprocess(self, targets, batch_size, scale_tensor):
@@ -163,7 +236,7 @@ class v8DetectionLoss:
 
     def __call__(self, preds, batch):
         """Calculate the sum of the loss for box, cls and dfl multiplied by batch size."""
-        loss = torch.zeros(3, device=self.device)  # box, cls, dfl
+        loss = torch.zeros(4, device=self.device)  # box, cls, dfl, centerloss
         feats = preds[1] if isinstance(preds, tuple) else preds
         pred_distri, pred_scores = torch.cat([xi.view(feats[0].shape[0], self.no, -1) for xi in feats], 2).split(
             (self.reg_max * 4, self.nc), 1)
@@ -200,12 +273,14 @@ class v8DetectionLoss:
             target_bboxes /= stride_tensor
             loss[0], loss[2] = self.bbox_loss(pred_distri, pred_bboxes, anchor_points, target_bboxes, target_scores,
                                               target_scores_sum, fg_mask)
+            loss[3] = self.center_loss(pred_bboxes, target_bboxes, fg_mask)
 
         loss[0] *= self.hyp.box  # box gain
         loss[1] *= self.hyp.cls  # cls gain
         loss[2] *= self.hyp.dfl  # dfl gain
+        loss[3] *= self.hyp.centerl  # center loss gain
 
-        return loss.sum() * batch_size, loss.detach()  # loss(box, cls, dfl)
+        return loss.sum() * batch_size, loss.detach()  # loss(box, cls, dfl, center_loss)
 
 
 class v8SegmentationLoss(v8DetectionLoss):
