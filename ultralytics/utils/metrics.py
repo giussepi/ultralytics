@@ -535,6 +535,7 @@ class Metric(SimpleClass):
         ap(): AP at IoU thresholds from 0.5 to 0.95 for all classes. Returns: List of AP scores. Shape: (nc,) or [].
         mp(): Mean precision of all classes. Returns: Float.
         mr(): Mean recall of all classes. Returns: Float.
+        mf1(): Mean f1 of all classes. Returns: Float.
         map33(): Mean AP at IoU threshold of 0.33 for all classes. Returns: Float.
         map50(): Mean AP at IoU threshold of 0.5 for all classes. Returns: Float.
         map75(): Mean AP at IoU threshold of 0.75 for all classes. Returns: Float.
@@ -551,13 +552,13 @@ class Metric(SimpleClass):
         Initializes a Metric instance for computing evaluation metrics for the YOLOv8 model.
 
         Args:
-            fitness_weights <list>: Weights employed with P, R, mAp@0.33, mAP@0.5, mAP@0.5:0.95
+            fitness_weights <list>: Weights employed with P, R, F1, mAp@0.33, mAP@0.5, mAP@0.5:0.95
                                      when calculating the fitness.
-                                     E.g. [0.0, 0.0, 0.0, 0.1, 0.9]
+                                     E.g. [0.0, 0.0, 0.0, 0,0, 0.1, 0.9]
         """
         assert isinstance(fitness_weights, list), type(fitness_weights)
-        assert len(fitness_weights) == 5, \
-            f'len(fitness_weights) is {len(fitness_weights)} but it must be 5'
+        assert len(fitness_weights) == 6, \
+            f'len(fitness_weights) is {len(fitness_weights)} but it must be 6'
 
         self.p = []  # (nc, )
         self.r = []  # (nc, )
@@ -618,6 +619,16 @@ class Metric(SimpleClass):
         return self.r.mean() if len(self.r) else 0.0
 
     @property
+    def mf1(self):
+        """
+        Returns the Mean F1 score of all classes.
+
+        Returns:
+            (float): The mean F1 of all classes.
+        """
+        return self.f1.mean() if len(self.f1) else 0.0
+
+    @property
     def map33(self):
         """
         Returns the mean Average Precision (mAP) at an IoU threshold of 0.33.
@@ -658,12 +669,12 @@ class Metric(SimpleClass):
         return self.all_ap[:, :-1].mean() if len(self.all_ap) else 0.0
 
     def mean_results(self):
-        """Mean of results, return mp, mr, map33, map50, map."""
-        return [self.mp, self.mr, self.map33, self.map50, self.map]
+        """Mean of results, return mp, mr, mf1, map33, map50, map."""
+        return [self.mp, self.mr, self.mf1, self.map33, self.map50, self.map]
 
     def class_result(self, i):
-        """Class-aware result, return p[i], r[i], ap33[i], ap50[i], ap[i]."""
-        return self.p[i], self.r[i], self.ap33[i], self.ap50[i], self.ap[i]
+        """Class-aware result, return p[i], r[i], f1[i]  ap33[i], ap50[i], ap[i]."""
+        return self.p[i], self.r[i], self.f1[i], self.ap33[i], self.ap50[i], self.ap[i]
 
     @property
     def maps(self):
@@ -774,6 +785,7 @@ class DetMetrics(SimpleClass):
         return [
             'metrics/precision(B)',
             'metrics/recall(B)',
+            'metrics/F1(B)',
             'metrics/mAP33(B)',
             'metrics/mAP50(B)',
             'metrics/mAP50-95(B)',
